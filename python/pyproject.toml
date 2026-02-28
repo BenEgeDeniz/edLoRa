@@ -9,7 +9,7 @@ authors = [
   { name="BenEgeDeniz", email="ege@benegedeniz.com" },
 ]
 description = "A lightweight cross-language communication protocol for rocketry telemetry over LoRa."
-readme = "../README.md"
+readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
