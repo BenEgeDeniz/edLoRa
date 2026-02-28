@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "edlora"
 version = "1.0.0"
 authors = [
-  { name="benegedeniz", email="ege@benegedeniz.com" },
+  { name="BenEgeDeniz", email="ege@benegedeniz.com" },
 ]
 description = "A lightweight cross-language communication protocol for rocketry telemetry over LoRa."
 readme = "../README.md"
@@ -20,5 +20,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/benegedeniz/edlora"
-"Bug Tracker" = "https://github.com/benegedeniz/edlora/issues"
+"Homepage" = "https://github.com/BenEgeDeniz/edlora"
+"Bug Tracker" = "https://github.com/BenEgeDeniz/edlora/issues"
