@@ -1,0 +1,28 @@
+# C++ Build directories
+cpp/build/
+cpp/bin/
+cpp/lib/
+*.o
+*.a
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Python build artifacts
+python/build/
+python/dist/
+python/*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
