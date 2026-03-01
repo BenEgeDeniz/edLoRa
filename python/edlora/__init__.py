@@ -60,6 +60,15 @@ class Packet:
     def pack(self) -> bytes:
         if len(self.payload) > self.MAX_PAYLOAD_SIZE:
             raise ValueError(f"Payload too large. Max: {self.MAX_PAYLOAD_SIZE}")
+        if not (0 <= self.sender_id <= 255):
+            raise ValueError("Sender ID must be between 0 and 255")
+        if not (0 <= self.receiver_id <= 255):
+            raise ValueError("Receiver ID must be between 0 and 255")
+        if not (0 <= self.seq_num <= 255):
+            raise ValueError("Sequence number must be between 0 and 255")
+        if self.timestamp < 0 or self.timestamp > 0xFFFFFFFF:
+            raise ValueError("Timestamp must be a 32-bit unsigned integer")
+
 
         # Pack header
         # Format: B(sync), B(sender), B(recv), B(type), B(seq), I(time, 4bytes), B(len)

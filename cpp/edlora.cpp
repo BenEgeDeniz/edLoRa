@@ -32,12 +32,21 @@ Packet Packet::create_ack(uint8_t my_id, uint32_t current_timestamp) const {
 void Packet::set_payload_string(const char* str) {
     if (str == nullptr) return;
     
-    size_t i = 0;
-    while (str[i] != '\0' && i < MAX_PAYLOAD_SIZE) {
-        payload[i] = static_cast<uint8_t>(str[i]);
-        i++;
+    #ifdef _WIN32
+    size_t length = strnlen_s(str, MAX_PAYLOAD_SIZE);
+    #else
+    // Some older systems don't have strnlen, so we manually do a bounded check 
+    // to be extra safe without relying on libc.
+    size_t length = 0;
+    while(length < MAX_PAYLOAD_SIZE && str[length] != '\0') {
+        length++;
     }
-    payload_len = static_cast<uint8_t>(i);
+    #endif
+
+    for (size_t i = 0; i < length; ++i) {
+        payload[i] = static_cast<uint8_t>(str[i]);
+    }
+    payload_len = static_cast<uint8_t>(length);
 }
 
 size_t Packet::get_payload_string(char* out_buffer, size_t out_buffer_size) const {
@@ -108,11 +117,18 @@ bool Protocol::unpack(const uint8_t* buffer, size_t length, Packet& packet) {
     
     if (received_crc != calculated_crc) return false;
 
+    // Explicitly zero out the payload buffer first to prevent ghost data
+    for (size_t i = 0; i < MAX_PAYLOAD_SIZE; ++i) {
+        packet.payload[i] = 0;
+    }
+
     // Populate Packet
     packet.sender_id = buffer[1];
     packet.receiver_id = buffer[2];
     packet.msg_type = static_cast<MsgType>(buffer[3]);
     packet.seq_num = buffer[4];
+    
+
     
     packet.timestamp = static_cast<uint32_t>(buffer[5]) |
                        (static_cast<uint32_t>(buffer[6]) << 8) |
