@@ -13,9 +13,9 @@ A lightweight, cross-language (C++ & Python) binary protocol designed specifical
 
 ## Extensive Documentation
 If you are planning to deploy `edLoRa` for a competition-grade architecture, please review the extensive documentation to fully understand the protocol specification and how to utilize it effectively:
-- 📖 [Protocol Architecture & Reasoning](docs/architecture.md) — *Why the protocol relies on binary struct-packing, Sync Bytes, auto-injected timestamps, and how the `MsgType::ACK` (Command Acknowledgement) bouncing mathematically maps packet delivery.*
-- 🚀 [Getting Started Guide](docs/getting_started.md) — *In-depth code implementation details for initializing, packing, and securely parsing valid buffers on both ESP32/Arduino and Python.*
-- 💻 [CLI Stream Monitor](docs/cli_monitor.md) — *How to test your packet layout by streaming raw RF bytes directly from a serial LoRa module into a terminal window using the `examples/cli_monitor.py` GUI.*
+- 📖 [Protocol Architecture & Reasoning](https://github.com/BenEgeDeniz/edLoRa/blob/main/docs/architecture.md) — *Why the protocol relies on binary struct-packing, Sync Bytes, auto-injected timestamps, and how the `MsgType::ACK` (Command Acknowledgement) bouncing mathematically maps packet delivery.*
+- 🚀 [Getting Started Guide](https://github.com/BenEgeDeniz/edLoRa/blob/main/docs/getting_started.md) — *In-depth code implementation details for initializing, packing, and securely parsing valid buffers on both ESP32/Arduino and Python.*
+- 💻 [CLI Stream Monitor](https://github.com/BenEgeDeniz/edLoRa/blob/main/docs/cli_monitor.md) — *How to test your packet layout by streaming raw RF bytes directly from a serial LoRa module into a terminal window using the `examples/cli_monitor.py` GUI.*
 
 ## Directory Structure
 - `cpp/`: C++ header (`edlora.h`) and source implementation for ESP32/Linux.
