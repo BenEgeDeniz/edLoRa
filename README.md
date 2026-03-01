@@ -131,6 +131,7 @@ is_for_me = p.is_targeted_to(0x01)
 if p.msg_type == MsgType.ALTIMETER:
     alt, vel = struct.unpack("<ff", p.payload)
     print(f"Altimeter: {alt}m, {vel}m/s")
+```
 
 
 ### Serial Monitor (CLI)
