@@ -32,6 +32,11 @@ To allow for structured data, `edLoRa` categorizes packets using the `MsgType` b
 | `ERROR_MSG` | `0xFE` | Faults and system error states. |
 | `CUSTOM` | `0xFF` | Freeform binary payloads. |
 
+## Device Addressing & Broadcasting
+Every packet encapsulates a `Sender_ID` and a `Receiver_ID` allowing you to strictly route telemetry between multiple rockets and ground stations.
+- Set the `Receiver_ID` to `0xFF` (which is mapped to `Packet::BROADCAST_ID` / `Packet.BROADCAST_ID` in Python) if you want all listening ground stations/nodes to process the packet.
+- When un-packing, use the builtin boolean check `rx.is_targeted_to(YOUR_ID)` to safely filter out noise intended for other modules!
+
 ## Usage Guide (C++)
 
 Include `edlora.h` and `edlora.cpp` in your ESP-IDF or Arduino project.
