@@ -9,7 +9,8 @@ using namespace edlora;
 
 uint8_t seq_num = 0;
 const uint8_t SENDER_ID = 0x10;
-const uint8_t RECEIVER_ID = 0xFF;
+const uint8_t BROADCAST_RECEIVER = Packet::BROADCAST_ID;
+const uint8_t GROUND_STATION_ID = 0x01;
 
 void print_hex(const uint8_t* data, size_t length) {
     for (size_t i = 0; i < length; ++i) {
@@ -20,7 +21,7 @@ void print_hex(const uint8_t* data, size_t length) {
 void send_log(const char* msg) {
     Packet p;
     p.sender_id = SENDER_ID;
-    p.receiver_id = RECEIVER_ID;
+    p.receiver_id = GROUND_STATION_ID; // Targeted specifically to us
     p.msg_type = MsgType::COMMAND;
     p.seq_num = seq_num++;
     
@@ -32,6 +33,8 @@ void send_log(const char* msg) {
     // Simulate Reception: unpack the buffer
     Packet rx_p;
     if (Protocol::unpack(buffer, size, rx_p)) {
+        if (!rx_p.is_targeted_to(GROUND_STATION_ID)) return; // Drop
+
         char rx_msg[256];
         rx_p.get_payload_string(rx_msg, sizeof(rx_msg));
         std::cout << "[RX: COMMAND] '" << rx_msg << "' (Sequence: " << (int)rx_p.seq_num << ")" << std::endl;
@@ -45,7 +48,7 @@ void send_log(const char* msg) {
 void send_telemetry(float alt, float vel) {
     Packet p;
     p.sender_id = SENDER_ID;
-    p.receiver_id = RECEIVER_ID;
+    p.receiver_id = BROADCAST_RECEIVER; // Broadcast telemetry to all listeners
     p.msg_type = MsgType::ALTIMETER;
     p.seq_num = seq_num++;
     
@@ -59,6 +62,8 @@ void send_telemetry(float alt, float vel) {
     // Simulate Reception: Unpack
     Packet rx_p;
     if (Protocol::unpack(buffer, size, rx_p) && rx_p.payload_len == 8) {
+        if (!rx_p.is_targeted_to(GROUND_STATION_ID)) return; // Drop
+
         float rx_alt, rx_vel;
         std::memcpy(&rx_alt, &rx_p.payload[0], sizeof(float));
         std::memcpy(&rx_vel, &rx_p.payload[4], sizeof(float));

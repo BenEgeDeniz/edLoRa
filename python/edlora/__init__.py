@@ -15,6 +15,7 @@ class MsgType(IntEnum):
 
 class Packet:
     SYNC_BYTE = 0xED
+    BROADCAST_ID = 0xFF
     MAX_PAYLOAD_SIZE = 240
     HEADER_SIZE = 6
     FOOTER_SIZE = 2 # CRC16
@@ -29,6 +30,10 @@ class Packet:
     @property
     def payload_len(self) -> int:
         return len(self.payload)
+
+    def is_targeted_to(self, my_id: int) -> bool:
+        """Check if the packet is targeted to my_id, or is a broadcast"""
+        return self.receiver_id == my_id or self.receiver_id == self.BROADCAST_ID
 
     def set_payload_string(self, text: str):
         """Helper to encode a string directly to the payload bytes"""

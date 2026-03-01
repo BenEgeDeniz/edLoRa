@@ -9,6 +9,10 @@ Packet::Packet()
     }
 }
 
+bool Packet::is_targeted_to(uint8_t my_id) const {
+    return (receiver_id == my_id) || (receiver_id == BROADCAST_ID);
+}
+
 void Packet::set_payload_string(const char* str) {
     if (str == nullptr) return;
     

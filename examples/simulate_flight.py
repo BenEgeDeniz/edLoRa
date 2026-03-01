@@ -6,25 +6,31 @@ def simulate_flight():
     print("=== edLoRa Rocket Flight Simulation ===")
     
     sender = 0x10 # Rocket
-    receiver = 0xFF # Broadcast to all Ground Stations
+    broadcast_receiver = Packet.BROADCAST_ID # 0xFF
+    ground_station = 0x01 # Our local listener ID
     seq = 0
     
     def send_log(msg: str):
         nonlocal seq
-        p = Packet(sender, receiver, MsgType.COMMAND, seq)
+        # We target this specific ground station directly
+        p = Packet(sender, ground_station, MsgType.COMMAND, seq)
         p.set_payload_string(msg)
         packed = p.pack()
         seq += 1
         
         # Unpack the just-packed dataset for demonstration
         rx_p = Packet.unpack(packed)
+        if not rx_p.is_targeted_to(ground_station):
+            return # Drop packets not meant for us
+
         recovered_msg = rx_p.get_payload_string()
         print(f"[RX: COMMAND] '{recovered_msg}' (Sequence: {rx_p.seq_num})")
         time.sleep(1)
 
     def send_telemetry(alt: float, vel: float):
         nonlocal seq
-        p = Packet(sender, receiver, MsgType.ALTIMETER, seq)
+        # Telemetry is broadcasted to ALL listeners
+        p = Packet(sender, broadcast_receiver, MsgType.ALTIMETER, seq)
         # Pack two floats (Altitude, Velocity) into 8 bytes
         p.payload = struct.pack("<ff", alt, vel)
         packed = p.pack()
@@ -32,6 +38,9 @@ def simulate_flight():
         
         # Unpack the telemetry for demonstration
         rx_p = Packet.unpack(packed)
+        if not rx_p.is_targeted_to(ground_station):
+            return # Drop packets not meant for us
+
         recovered_alt, recovered_vel = struct.unpack("<ff", rx_p.payload)
         print(f"[RX: TELEM  ] Alt: {recovered_alt:.1f}m, Vel: {recovered_vel:.1f}m/s (Sequence: {rx_p.seq_num})")
         time.sleep(0.5)

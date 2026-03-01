@@ -32,7 +32,12 @@ struct Packet {
     uint8_t payload_len;
     uint8_t payload[MAX_PAYLOAD_SIZE];
 
+    static constexpr uint8_t BROADCAST_ID = 0xFF;
+
     Packet();
+
+    // Check if the packet is targeted to my_id, or is a broadcast
+    bool is_targeted_to(uint8_t my_id) const;
 
     // Helper to set string payloads easily
     void set_payload_string(const char* str);
