@@ -13,7 +13,8 @@ except ImportError:
 
 def format_packet(p: Packet) -> str:
     # [TIME]
-    now = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    # We now strictly use the timestamp embedded natively in the edLoRa packet
+    time_str = f"{p.timestamp}ms"
     
     # [SENDER ID]
     sender_str = f"0x{p.sender_id:02X}"
@@ -38,7 +39,7 @@ def format_packet(p: Packet) -> str:
     else:
         content = f"Raw Hex: {p.payload.hex()}"
         
-    return f"[{now}] [{sender_str}] [{msg_type_str}] [{target_str}] {content}"
+    return f"[{time_str}] [{sender_str}] [{msg_type_str}] [{target_str}] {content}"
 
 def stream_from_serial(port: str, baud: int):
     if not serial:
