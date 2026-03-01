@@ -83,5 +83,16 @@ class TestEdLoraProtocol(unittest.TestCase):
         self.assertIsNotNone(recovered)
         self.assertEqual(recovered.get_payload_string(), "FULL")
 
+    def test_ack_generation(self):
+        rx = Packet(sender_id=0xAA, receiver_id=0xBB, seq_num=42, msg_type=MsgType.COMMAND)
+        ack = rx.create_ack(my_id=0xBB, current_timestamp=12345)
+        
+        self.assertEqual(ack.sender_id, 0xBB)
+        self.assertEqual(ack.receiver_id, 0xAA)
+        self.assertEqual(ack.msg_type, MsgType.ACK)
+        self.assertEqual(ack.timestamp, 12345)
+        self.assertEqual(ack.payload_len, 1)
+        self.assertEqual(ack.payload[0], 42)
+
 if __name__ == '__main__':
     unittest.main()

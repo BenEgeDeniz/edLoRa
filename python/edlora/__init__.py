@@ -10,6 +10,7 @@ class MsgType(IntEnum):
     SYS_STATE = 0x05   # E.g., Battery level, temperature, flight phase
     ORIENTATION = 0x06 # Quaternions or Euler angles
     EVENT = 0x07       # Flight events (Launch, Apogee, Deployments)
+    ACK = 0xFD         # Command Acknowledgement (payload = original seq_num)
     ERROR_MSG = 0xFE   # Error/Fault conditions
     CUSTOM = 0xFF
 
@@ -35,6 +36,18 @@ class Packet:
     def is_targeted_to(self, my_id: int) -> bool:
         """Check if the packet is targeted to my_id, or is a broadcast"""
         return self.receiver_id == my_id or self.receiver_id == self.BROADCAST_ID
+
+    def create_ack(self, my_id: int, current_timestamp: int) -> "Packet":
+        """Generate an ACK packet targeted back to the sender of this packet."""
+        ack_p = Packet(
+            sender_id=my_id,
+            receiver_id=self.sender_id, # Target the original sender
+            msg_type=MsgType.ACK,
+            seq_num=0, # ACKs don't strictly need their own sequences, but could use one.
+            timestamp=current_timestamp,
+            payload=bytes([self.seq_num]) # Payload is exactly 1 byte: the original sequence number
+        )
+        return ack_p
 
     def set_payload_string(self, text: str):
         """Helper to encode a string directly to the payload bytes"""

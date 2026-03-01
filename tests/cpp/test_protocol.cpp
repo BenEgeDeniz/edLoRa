@@ -127,6 +127,23 @@ void test_stream_fragmentation() {
     ASSERT_TRUE(std::string(out) == "FULL", "Fragmented Payload Intact");
 }
 
+void test_ack_generation() {
+    Packet rx;
+    rx.sender_id = 0xAA;
+    rx.receiver_id = 0xBB;
+    rx.seq_num = 42;
+    rx.msg_type = MsgType::COMMAND;
+    
+    Packet ack = rx.create_ack(0xBB, 12345);
+    
+    ASSERT_TRUE(ack.sender_id == 0xBB, "ACK Sender matches receiver");
+    ASSERT_TRUE(ack.receiver_id == 0xAA, "ACK Target matches original sender");
+    ASSERT_TRUE(ack.msg_type == MsgType::ACK, "ACK Type Correct");
+    ASSERT_TRUE(ack.timestamp == 12345, "ACK Timestamp injected");
+    ASSERT_TRUE(ack.payload_len == 1, "ACK Payload Size is 1");
+    ASSERT_TRUE(ack.payload[0] == 42, "ACK Payload matches original seq_num");
+}
+
 int main() {
     std::cout << "=== Running edLoRa C++ Unit Tests ===" << std::endl;
     
@@ -135,6 +152,7 @@ int main() {
     test_crc_failure();
     test_crypto_wrapper();
     test_stream_fragmentation();
+    test_ack_generation();
     
     std::cout << "---" << std::endl;
     std::cout << "Passed: " << tests_passed << ", Failed: " << tests_failed << std::endl;

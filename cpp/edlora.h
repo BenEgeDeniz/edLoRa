@@ -20,6 +20,7 @@ enum class MsgType : uint8_t {
     SYS_STATE = 0x05,   // E.g., Battery level, temperature, flight phase
     ORIENTATION = 0x06, // Quaternions or Euler angles
     EVENT = 0x07,       // Flight events (Launch, Apogee, Deployments)
+    ACK = 0xFD,         // Command Acknowledgement (payload = original seq_num)
     ERROR_MSG = 0xFE,   // Error/Fault conditions
     CUSTOM = 0xFF
 };
@@ -39,6 +40,10 @@ struct Packet {
 
     // Check if the packet is targeted to my_id, or is a broadcast
     bool is_targeted_to(uint8_t my_id) const;
+
+    // Helper to generate an ACK packet for this specific message.
+    // The payload of the generated ACK is simply the `seq_num` of this packet.
+    Packet create_ack(uint8_t my_id, uint32_t current_timestamp) const;
 
     // Helper to set string payloads easily
     void set_payload_string(const char* str);

@@ -36,6 +36,8 @@ def format_packet(p: Packet) -> str:
         content = f"Altitude: {alt:.2f}m, Velocity: {vel:.2f}m/s"
     elif p.msg_type == MsgType.HEARTBEAT:
         content = "Alive"
+    elif p.msg_type == MsgType.ACK and p.payload_len >= 1:
+        content = f"Acknowledged Seq: {p.payload[0]}"
     else:
         content = f"Raw Hex: {p.payload.hex()}"
         

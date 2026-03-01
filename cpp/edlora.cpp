@@ -14,6 +14,21 @@ bool Packet::is_targeted_to(uint8_t my_id) const {
     return (receiver_id == my_id) || (receiver_id == BROADCAST_ID);
 }
 
+Packet Packet::create_ack(uint8_t my_id, uint32_t current_timestamp) const {
+    Packet ack_p;
+    ack_p.sender_id = my_id;
+    ack_p.receiver_id = this->sender_id; // Return to sender
+    ack_p.msg_type = MsgType::ACK;
+    ack_p.seq_num = 0; // ACKs don't strictly need their own sequences
+    ack_p.timestamp = current_timestamp;
+    
+    // Payload is exactly 1 byte: the original sequence number
+    ack_p.payload_len = 1;
+    ack_p.payload[0] = this->seq_num;
+    
+    return ack_p;
+}
+
 void Packet::set_payload_string(const char* str) {
     if (str == nullptr) return;
     
