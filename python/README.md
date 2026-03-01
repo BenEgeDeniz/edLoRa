@@ -11,6 +11,12 @@ A lightweight, cross-language (C++ & Python) binary protocol designed specifical
 - **Embedded Friendly:** The C++ implementation avoids dynamic memory allocation entirely, protecting against heap fragmentation on ESP32/Arduino.
 - **Optional Crypto:** Includes a lightweight XOR-cipher wrapper inside `edlora_crypto` for obfuscating payload bytes. (Easily swappable with AES if actual cryptographic security is required).
 
+## Extensive Documentation
+If you are planning to deploy `edLoRa` for a competition-grade architecture, please review the extensive documentation to fully understand the protocol specification and how to utilize it effectively:
+- 📖 [Protocol Architecture & Reasoning](docs/architecture.md) — *Why the protocol relies on binary struct-packing, Sync Bytes, auto-injected timestamps, and how the `MsgType::ACK` (Command Acknowledgement) bouncing mathematically maps packet delivery.*
+- 🚀 [Getting Started Guide](docs/getting_started.md) — *In-depth code implementation details for initializing, packing, and securely parsing valid buffers on both ESP32/Arduino and Python.*
+- 💻 [CLI Stream Monitor](docs/cli_monitor.md) — *How to test your packet layout by streaming raw RF bytes directly from a serial LoRa module into a terminal window using the `examples/cli_monitor.py` GUI.*
+
 ## Directory Structure
 - `cpp/`: C++ header (`edlora.h`) and source implementation for ESP32/Linux.
 - `python/`: Python 3.x module (`edlora.py`) for the Ground Station / decoding logic.
@@ -29,6 +35,7 @@ To allow for structured data, `edLoRa` categorizes packets using the `MsgType` b
 | `SYS_STATE` | `0x05` | System battery, temp, and current flight phase. |
 | `ORIENTATION` | `0x06` | Calculated attitude (Quaternions/Euler angles). |
 | `EVENT` | `0x07` | Major flight events (Liftoff, MECO, Apogee, Deployment). |
+| `ACK` | `0xFD` | Command Acknowledgement (Payload = original `seq_num`). |
 | `ERROR_MSG` | `0xFE` | Faults and system error states. |
 | `CUSTOM` | `0xFF` | Freeform binary payloads. |
 
@@ -79,17 +86,25 @@ void loop() {
     }
 }
 
-// Example: Receiving in C++
+// Example: Receiving & Acknowledging in C++
 void receive_example(uint8_t* rx_buffer, size_t length) {
     Packet rx_packet;
     
     // Unpack incoming bytes
     if (Protocol::unpack(rx_buffer, length, rx_packet)) {
-        char str_buffer[256];
-        rx_packet.get_payload_string(str_buffer, sizeof(str_buffer));
-        
-        // Use your received data!
-        // Serial.printf("Received string: %s\n", str_buffer);
+        if (rx_packet.is_targeted_to(0x10)) {
+            // Use your received data!
+            if (rx_packet.msg_type == MsgType::COMMAND) {
+                // Execute command...
+                
+                // Construct an automated ACK payload and pack it
+                Packet ack = rx_packet.create_ack(0x10, millis());
+                
+                uint8_t reply_buf[256];
+                int reply_len = Protocol::pack(ack, reply_buf, sizeof(reply_buf));
+                // LoRa.write(reply_buf, reply_len);
+            }
+        }
     }
 }
 ```
@@ -115,6 +130,9 @@ try:
     
     # Retrieve as a decoded string
     print(f"Payload (String): {packet.get_payload_string()}")
+    
+    # Check Timestamp
+    print(f"Time (ms): {packet.timestamp}")
 except ValueError as e:
     print(f"Packet corrupted or rejected: {e}")
 
@@ -131,6 +149,8 @@ is_for_me = p.is_targeted_to(0x01)
 if p.msg_type == MsgType.ALTIMETER:
     alt, vel = struct.unpack("<ff", p.payload)
     print(f"Altimeter: {alt}m, {vel}m/s")
+elif p.msg_type == MsgType.ACK:
+    print(f"Received ACK for Sequence Number: {p.payload[0]}")
 ```
 
 
@@ -149,7 +169,8 @@ tx_packet = Packet(
     sender_id=0xFF,   # Ground station ID
     receiver_id=0x10, # Rocket ID
     msg_type=MsgType.COMMAND,
-    seq_num=42
+    seq_num=42,
+    timestamp=12584   # Milliseconds
 )
 
 tx_packet.set_payload_string("DEPLOY PARACHUTE")
