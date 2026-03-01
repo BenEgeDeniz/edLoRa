@@ -119,6 +119,29 @@ except ValueError as e:
     print(f"Packet corrupted or rejected: {e}")
 
 
+# Example: Unpacking specific message types
+import struct
+from edlora import Packet
+
+p = Packet.unpack(rx_bytes) # Automatically validates sync byte and CRC16
+
+# Extract targeted or broadcast addressing
+is_for_me = p.is_targeted_to(0x01) 
+
+if p.msg_type == MsgType.ALTIMETER:
+    alt, vel = struct.unpack("<ff", p.payload)
+    print(f"Altimeter: {alt}m, {vel}m/s")
+
+
+### Serial Monitor (CLI)
+You can directly stream incoming data out of a physical LoRa module connected via USB using the `cli_monitor.py` example script. It fully handles framing raw serial bytes into complete Packets.
+
+```bash
+pip install pyserial
+python3 examples/cli_monitor.py --port /dev/ttyUSB0 --baud 115200
+```
+*Outputs formatted logs: `[15:30:22.123] [0x10] [ALTIMETER] [BROADCAST] Altitude: 1500.5m, Velocity: 20.3m/s`*
+
 # Example: Transmitting from Python
 tx_packet = Packet(
     sender_id=0xFF,   # Ground station ID
