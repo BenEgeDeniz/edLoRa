@@ -87,6 +87,46 @@ void test_crypto_wrapper() {
     ASSERT_TRUE(std::string(out) == "SECRET MESSAGE", "Crypto Wrapper Match");
 }
 
+void test_stream_fragmentation() {
+    Packet tx;
+    tx.sender_id = 0xAA;
+    tx.set_payload_string("FULL");
+    
+    uint8_t valid_bytes[256];
+    int valid_size = Protocol::pack(tx, valid_bytes, sizeof(valid_bytes));
+    
+    // Simulate HALFPACKET + FULLPACKET + HALFPACKET
+    std::vector<uint8_t> stream;
+    
+    // Insert half packet
+    for (int i=0; i<4; i++) stream.push_back(valid_bytes[i]);
+    
+    // Insert full packet
+    for (int i=0; i<valid_size; i++) stream.push_back(valid_bytes[i]);
+    
+    // Insert half packet
+    for (int i=0; i<5; i++) stream.push_back(valid_bytes[i]);
+    
+    // Scanning Logic
+    bool recovered = false;
+    Packet rx;
+    for (size_t i = 0; i < stream.size(); i++) {
+        if (stream[i] == SYNC_BYTE) {
+            // Attempt unpack
+            if (Protocol::unpack(&stream[i], stream.size() - i, rx)) {
+                recovered = true;
+                break;
+            }
+        }
+    }
+    
+    ASSERT_TRUE(recovered, "Recovered from fragmented stream");
+    
+    char out[256];
+    rx.get_payload_string(out, sizeof(out));
+    ASSERT_TRUE(std::string(out) == "FULL", "Fragmented Payload Intact");
+}
+
 int main() {
     std::cout << "=== Running edLoRa C++ Unit Tests ===" << std::endl;
     
@@ -94,6 +134,7 @@ int main() {
     test_string_payload();
     test_crc_failure();
     test_crypto_wrapper();
+    test_stream_fragmentation();
     
     std::cout << "---" << std::endl;
     std::cout << "Passed: " << tests_passed << ", Failed: " << tests_failed << std::endl;

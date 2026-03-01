@@ -57,5 +57,31 @@ class TestEdLoraProtocol(unittest.TestCase):
         
         self.assertEqual(decrypted.payload, b"SECRET")
 
+    def test_stream_fragmentation(self):
+        # Simulate: HALFPACKET + FULLPACKET + HALFPACKET
+        p = Packet(sender_id=0xAA, msg_type=MsgType.COMMAND)
+        p.set_payload_string("FULL")
+        valid_packet_bytes = p.pack()
+        
+        # Craft a stream with garbage/partial packets on both ends
+        half_packet_before = valid_packet_bytes[:4]
+        half_packet_after = valid_packet_bytes[:5]
+        stream = half_packet_before + valid_packet_bytes + half_packet_after
+        
+        # Stream parser scanning logic
+        recovered = None
+        for i in range(len(stream)):
+            if stream[i] == Packet.SYNC_BYTE:
+                try:
+                    # Try unpacking from this sync byte onwards
+                    rx = Packet.unpack(stream[i:])
+                    recovered = rx
+                    break
+                except ValueError:
+                    pass # Keep scanning
+        
+        self.assertIsNotNone(recovered)
+        self.assertEqual(recovered.get_payload_string(), "FULL")
+
 if __name__ == '__main__':
     unittest.main()
