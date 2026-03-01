@@ -144,6 +144,7 @@ python3 examples/cli_monitor.py --port /dev/ttyUSB0 --baud 115200
 *Outputs formatted logs: `[15:30:22.123] [0x10] [ALTIMETER] [BROADCAST] Altitude: 1500.5m, Velocity: 20.3m/s`*
 
 # Example: Transmitting from Python
+```python
 tx_packet = Packet(
     sender_id=0xFF,   # Ground station ID
     receiver_id=0x10, # Rocket ID
