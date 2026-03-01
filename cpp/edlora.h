@@ -8,7 +8,7 @@ namespace edlora {
 
 constexpr uint8_t SYNC_BYTE = 0xED;
 constexpr size_t MAX_PAYLOAD_SIZE = 240;
-constexpr size_t HEADER_SIZE = 6;
+constexpr size_t HEADER_SIZE = 10; // Sync(1) + Sender(1) + Receiver(1) + Type(1) + Seq(1) + Timestamp(4) + Len(1)
 constexpr size_t FOOTER_SIZE = 2; // CRC16
 
 enum class MsgType : uint8_t {
@@ -29,6 +29,7 @@ struct Packet {
     uint8_t receiver_id;
     MsgType msg_type;
     uint8_t seq_num;
+    uint32_t timestamp; 
     uint8_t payload_len;
     uint8_t payload[MAX_PAYLOAD_SIZE];
 

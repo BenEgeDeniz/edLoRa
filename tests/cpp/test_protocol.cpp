@@ -29,7 +29,7 @@ void test_basic_packing() {
     uint8_t buffer[256];
     int size = Protocol::pack(tx, buffer, sizeof(buffer));
     
-    ASSERT_TRUE(size == 8, "Basic Packing Size (0 payload)");
+    ASSERT_TRUE(size == 12, "Basic Packing Size (0 payload)");
     ASSERT_TRUE(buffer[0] == SYNC_BYTE, "Sync Byte OK");
     
     Packet rx;
@@ -60,7 +60,7 @@ void test_crc_failure() {
     uint8_t buffer[256];
     int size = Protocol::pack(tx, buffer, sizeof(buffer));
     
-    buffer[7] ^= 0xFF; // Flip bits in payload
+    buffer[11] ^= 0xFF; // Flip bits in payload
     
     Packet rx;
     bool success = Protocol::unpack(buffer, size, rx);

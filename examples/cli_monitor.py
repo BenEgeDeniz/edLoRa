@@ -63,12 +63,12 @@ def stream_from_serial(port: str, baud: int):
                 continue
             
             if byte[0] == Packet.SYNC_BYTE:
-                # Read the rest of the header (5 bytes)
-                header_rest = ser.read(5)
-                if len(header_rest) != 5:
+                # Read the rest of the header (9 bytes)
+                header_rest = ser.read(9)
+                if len(header_rest) != 9:
                     continue
                 
-                payload_len = header_rest[4]
+                payload_len = header_rest[8]
                 
                 # Check bounds to avoid hanging on bad data
                 if payload_len > Packet.MAX_PAYLOAD_SIZE:
@@ -109,14 +109,14 @@ def main():
             while True:
                 time.sleep(1.5)
                 # Generate a mock broadcast Altimeter packet
-                p_alt = Packet(sender_id=0x10, receiver_id=Packet.BROADCAST_ID, msg_type=MsgType.ALTIMETER, seq_num=seq)
+                p_alt = Packet(sender_id=0x10, receiver_id=Packet.BROADCAST_ID, msg_type=MsgType.ALTIMETER, seq_num=seq, timestamp=int(time.time() * 1000) & 0xFFFFFFFF)
                 p_alt.payload = struct.pack("<ff", 1500.5 + seq, 20.3)
                 print(format_packet(p_alt))
                 
                 # Alternate with a targeted command
                 if seq % 3 == 0:
                     time.sleep(1)
-                    p_cmd = Packet(sender_id=0x01, receiver_id=0x10, msg_type=MsgType.COMMAND, seq_num=seq)
+                    p_cmd = Packet(sender_id=0x01, receiver_id=0x10, msg_type=MsgType.COMMAND, seq_num=seq, timestamp=int(time.time() * 1000) & 0xFFFFFFFF)
                     p_cmd.set_payload_string("DEPLOY MAIN CHUTE")
                     print(format_packet(p_cmd))
                 

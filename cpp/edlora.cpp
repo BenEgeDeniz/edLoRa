@@ -3,7 +3,8 @@
 namespace edlora {
 
 Packet::Packet() 
-    : sender_id(0), receiver_id(0), msg_type(MsgType::CUSTOM), seq_num(0), payload_len(0) {
+    : sender_id(0), receiver_id(0), msg_type(MsgType::CUSTOM), seq_num(0), 
+      timestamp(0), payload_len(0) {
     for (size_t i = 0; i < MAX_PAYLOAD_SIZE; ++i) {
         payload[i] = 0;
     }
@@ -53,7 +54,14 @@ int Protocol::pack(const Packet& packet, uint8_t* buffer, size_t buffer_size) {
     buffer[2] = packet.receiver_id;
     buffer[3] = static_cast<uint8_t>(packet.msg_type);
     buffer[4] = packet.seq_num;
-    buffer[5] = packet.payload_len;
+    
+    // Timestamp (4 bytes, Little Endian)
+    buffer[5] = static_cast<uint8_t>(packet.timestamp & 0xFF);
+    buffer[6] = static_cast<uint8_t>((packet.timestamp >> 8) & 0xFF);
+    buffer[7] = static_cast<uint8_t>((packet.timestamp >> 16) & 0xFF);
+    buffer[8] = static_cast<uint8_t>((packet.timestamp >> 24) & 0xFF);
+    
+    buffer[9] = packet.payload_len;
 
     // Payload
     for (size_t i = 0; i < packet.payload_len; ++i) {
@@ -75,7 +83,7 @@ bool Protocol::unpack(const uint8_t* buffer, size_t length, Packet& packet) {
     
     if (buffer[0] != SYNC_BYTE) return false;
 
-    uint8_t payload_len = buffer[5];
+    uint8_t payload_len = buffer[9];
     if (length < HEADER_SIZE + payload_len + FOOTER_SIZE) return false;
     if (payload_len > MAX_PAYLOAD_SIZE) return false;
 
@@ -90,6 +98,12 @@ bool Protocol::unpack(const uint8_t* buffer, size_t length, Packet& packet) {
     packet.receiver_id = buffer[2];
     packet.msg_type = static_cast<MsgType>(buffer[3]);
     packet.seq_num = buffer[4];
+    
+    packet.timestamp = static_cast<uint32_t>(buffer[5]) |
+                       (static_cast<uint32_t>(buffer[6]) << 8) |
+                       (static_cast<uint32_t>(buffer[7]) << 16) |
+                       (static_cast<uint32_t>(buffer[8]) << 24);
+                       
     packet.payload_len = payload_len;
 
     for (size_t i = 0; i < payload_len; ++i) {

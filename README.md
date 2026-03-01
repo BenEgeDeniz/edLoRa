@@ -115,6 +115,9 @@ try:
     
     # Retrieve as a decoded string
     print(f"Payload (String): {packet.get_payload_string()}")
+    
+    # Check Timestamp
+    print(f"Time (ms): {packet.timestamp}")
 except ValueError as e:
     print(f"Packet corrupted or rejected: {e}")
 
@@ -149,7 +152,8 @@ tx_packet = Packet(
     sender_id=0xFF,   # Ground station ID
     receiver_id=0x10, # Rocket ID
     msg_type=MsgType.COMMAND,
-    seq_num=42
+    seq_num=42,
+    timestamp=12584   # Milliseconds
 )
 
 tx_packet.set_payload_string("DEPLOY PARACHUTE")

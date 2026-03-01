@@ -7,7 +7,7 @@ class TestEdLoraProtocol(unittest.TestCase):
     def test_basic_packing(self):
         p = Packet(sender_id=0x10, receiver_id=0x20, msg_type=MsgType.HEARTBEAT, seq_num=5)
         packed = p.pack()
-        self.assertEqual(len(packed), 8) # 6 header + 0 payload + 2 CRC
+        self.assertEqual(len(packed), 12) # 10 header + 0 payload + 2 CRC
         self.assertEqual(packed[0], Packet.SYNC_BYTE)
 
     def test_string_payload(self):
@@ -28,7 +28,7 @@ class TestEdLoraProtocol(unittest.TestCase):
     def test_crc_failure(self):
         p = Packet(payload=b"VALID")
         packed = bytearray(p.pack())
-        packed[6] = 0xFF # Corrupt a byte in the payload
+        packed[10] = 0xFF # Corrupt a byte in the payload
         with self.assertRaises(ValueError) as context:
             Packet.unpack(bytes(packed))
         self.assertTrue("CRC" in str(context.exception))

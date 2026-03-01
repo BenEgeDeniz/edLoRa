@@ -17,14 +17,15 @@ class Packet:
     SYNC_BYTE = 0xED
     BROADCAST_ID = 0xFF
     MAX_PAYLOAD_SIZE = 240
-    HEADER_SIZE = 6
+    HEADER_SIZE = 10  # Sync(1), Sender(1), Recv(1), Type(1), Seq(1), Time(4), Len(1)
     FOOTER_SIZE = 2 # CRC16
 
-    def __init__(self, sender_id: int = 0, receiver_id: int = 0, msg_type: MsgType = MsgType.CUSTOM, seq_num: int = 0, payload: bytes = b""):
+    def __init__(self, sender_id: int = 0, receiver_id: int = 0, msg_type: MsgType = MsgType.CUSTOM, seq_num: int = 0, timestamp: int = 0, payload: bytes = b""):
         self.sender_id = sender_id
         self.receiver_id = receiver_id
         self.msg_type = msg_type
         self.seq_num = seq_num
+        self.timestamp = timestamp
         self.payload = payload
 
     @property
@@ -48,13 +49,14 @@ class Packet:
             raise ValueError(f"Payload too large. Max: {self.MAX_PAYLOAD_SIZE}")
 
         # Pack header
-        # Format: B (sync), B (sender), B (receiver), B (type), B (seq), B (len)
-        header = struct.pack("<BBBBBB", 
+        # Format: B(sync), B(sender), B(recv), B(type), B(seq), I(time, 4bytes), B(len)
+        header = struct.pack("<BBBBBIB", 
             self.SYNC_BYTE,
             self.sender_id,
             self.receiver_id,
             int(self.msg_type),
             self.seq_num,
+            self.timestamp,
             self.payload_len
         )
 
@@ -74,7 +76,7 @@ class Packet:
         if len(buffer) < cls.HEADER_SIZE + cls.FOOTER_SIZE:
             raise ValueError("Buffer too short")
 
-        sync, sender, receiver, msg_type_val, seq, payload_len = struct.unpack("<BBBBBB", buffer[:cls.HEADER_SIZE])
+        sync, sender, receiver, msg_type_val, seq, timestamp, payload_len = struct.unpack("<BBBBBIB", buffer[:cls.HEADER_SIZE])
 
         if sync != cls.SYNC_BYTE:
             raise ValueError(f"Invalid sync byte. Expected {cls.SYNC_BYTE}, got {sync}")
@@ -97,6 +99,7 @@ class Packet:
             receiver_id=receiver,
             msg_type=MsgType(msg_type_val),
             seq_num=seq,
+            timestamp=timestamp,
             payload=payload
         )
 
