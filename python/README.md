@@ -1,6 +1,7 @@
 # edLoRa Protocol
+[![PyPI version](https://img.shields.io/pypi/v/edlora.svg?color=blue)](https://pypi.org/project/edlora/)
 
-A lightweight, efficient, binary communication protocol designed for rocketry telemetry over LoRa modules. Supports both standard Linux and ESP32 platforms in C++, and comes with a Python 3 ground station implementation.
+A lightweight, cross-language (C++ & Python) binary protocol designed specifically for rocketry telemetry and command data over LoRa modules. Supports both standard Linux and ESP32 platforms in C++, and comes with a Python 3 ground station implementation.
 
 ## Features
 - **Binary Packing:** Completely avoids string processing to keep LoRa bandwidth usage minimal.
@@ -30,6 +31,11 @@ To allow for structured data, `edLoRa` categorizes packets using the `MsgType` b
 | `EVENT` | `0x07` | Major flight events (Liftoff, MECO, Apogee, Deployment). |
 | `ERROR_MSG` | `0xFE` | Faults and system error states. |
 | `CUSTOM` | `0xFF` | Freeform binary payloads. |
+
+## Device Addressing & Broadcasting
+Every packet encapsulates a `Sender_ID` and a `Receiver_ID` allowing you to strictly route telemetry between multiple rockets and ground stations.
+- Set the `Receiver_ID` to `0xFF` (which is mapped to `Packet::BROADCAST_ID` / `Packet.BROADCAST_ID` in Python) if you want all listening ground stations/nodes to process the packet.
+- When un-packing, use the builtin boolean check `rx.is_targeted_to(YOUR_ID)` to safely filter out noise intended for other modules!
 
 ## Usage Guide (C++)
 
@@ -113,7 +119,32 @@ except ValueError as e:
     print(f"Packet corrupted or rejected: {e}")
 
 
+# Example: Unpacking specific message types
+import struct
+from edlora import Packet
+
+p = Packet.unpack(rx_bytes) # Automatically validates sync byte and CRC16
+
+# Extract targeted or broadcast addressing
+is_for_me = p.is_targeted_to(0x01) 
+
+if p.msg_type == MsgType.ALTIMETER:
+    alt, vel = struct.unpack("<ff", p.payload)
+    print(f"Altimeter: {alt}m, {vel}m/s")
+```
+
+
+### Serial Monitor (CLI)
+You can directly stream incoming data out of a physical LoRa module connected via USB using the `cli_monitor.py` example script. It fully handles framing raw serial bytes into complete Packets.
+
+```bash
+pip install pyserial
+python3 examples/cli_monitor.py --port /dev/ttyUSB0 --baud 115200
+```
+*Outputs formatted logs: `[15:30:22.123] [0x10] [ALTIMETER] [BROADCAST] Altitude: 1500.5m, Velocity: 20.3m/s`*
+
 # Example: Transmitting from Python
+```python
 tx_packet = Packet(
     sender_id=0xFF,   # Ground station ID
     receiver_id=0x10, # Rocket ID

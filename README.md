@@ -1,5 +1,5 @@
 # edLoRa Protocol
-[![PyPI version](https://badge.fury.io/py/edlora.svg)](https://pypi.org/project/edlora/)
+[![PyPI version](https://img.shields.io/pypi/v/edlora.svg?color=blue)](https://pypi.org/project/edlora/)
 
 A lightweight, cross-language (C++ & Python) binary protocol designed specifically for rocketry telemetry and command data over LoRa modules. Supports both standard Linux and ESP32 platforms in C++, and comes with a Python 3 ground station implementation.
 
