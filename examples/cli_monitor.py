@@ -122,6 +122,11 @@ def main():
                     p_cmd = Packet(sender_id=0x01, receiver_id=0x10, msg_type=MsgType.COMMAND, seq_num=seq, timestamp=int(time.time() * 1000) & 0xFFFFFFFF)
                     p_cmd.set_payload_string("DEPLOY MAIN CHUTE")
                     print(format_packet(p_cmd))
+                    
+                    # Simulate the Rocket acknowledging the command
+                    time.sleep(0.5)
+                    p_ack = p_cmd.create_ack(my_id=0x10, current_timestamp=int(time.time() * 1000) & 0xFFFFFFFF)
+                    print(format_packet(p_ack))
                 
                 seq += 1
         except KeyboardInterrupt:
