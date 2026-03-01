@@ -85,17 +85,25 @@ void loop() {
     }
 }
 
-// Example: Receiving in C++
+// Example: Receiving & Acknowledging in C++
 void receive_example(uint8_t* rx_buffer, size_t length) {
     Packet rx_packet;
     
     // Unpack incoming bytes
     if (Protocol::unpack(rx_buffer, length, rx_packet)) {
-        char str_buffer[256];
-        rx_packet.get_payload_string(str_buffer, sizeof(str_buffer));
-        
-        // Use your received data!
-        // Serial.printf("Received string: %s\n", str_buffer);
+        if (rx_packet.is_targeted_to(0x10)) {
+            // Use your received data!
+            if (rx_packet.msg_type == MsgType::COMMAND) {
+                // Execute command...
+                
+                // Construct an automated ACK payload and pack it
+                Packet ack = rx_packet.create_ack(0x10, millis());
+                
+                uint8_t reply_buf[256];
+                int reply_len = Protocol::pack(ack, reply_buf, sizeof(reply_buf));
+                // LoRa.write(reply_buf, reply_len);
+            }
+        }
     }
 }
 ```
@@ -140,6 +148,8 @@ is_for_me = p.is_targeted_to(0x01)
 if p.msg_type == MsgType.ALTIMETER:
     alt, vel = struct.unpack("<ff", p.payload)
     print(f"Altimeter: {alt}m, {vel}m/s")
+elif p.msg_type == MsgType.ACK:
+    print(f"Received ACK for Sequence Number: {p.payload[0]}")
 ```
 
 

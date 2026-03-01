@@ -43,7 +43,14 @@ if (Protocol::unpack(rx_buffer, rx_len, rx)) {
     if (rx.is_targeted_to(0x10)) { 
         // Process exactly like a struct
         if (rx.msg_type == MsgType::COMMAND) {
-            // ...
+            // Execute command...
+            
+            // Instantly bounce an ACK back to the sender
+            Packet ack_p = rx.create_ack(0x10, millis());
+            
+            uint8_t tx_buffer[256];
+            int ack_len = Protocol::pack(ack_p, tx_buffer, sizeof(tx_buffer));
+            // LoRa.write(tx_buffer, ack_len);
         }
     }
 }
@@ -87,6 +94,10 @@ try:
     if rx.is_targeted_to(GROUND_STATION_ID):
         print(f"Packet verified. Offset time: {rx.timestamp}ms.")
         print(f"Raw Decode: {rx.get_payload_string()}")
+        
+        # If it was an ACK, the payload perfectly matches the seq_num of the command we sent!
+        if rx.msg_type == MsgType.ACK:
+            print(f"Rocket successfully acknowledged command #{rx.payload[0]}")
 
 except ValueError as e:
     print(f"Bad packet dropped: {e}")
