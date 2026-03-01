@@ -35,6 +35,7 @@ To allow for structured data, `edLoRa` categorizes packets using the `MsgType` b
 | `SYS_STATE` | `0x05` | System battery, temp, and current flight phase. |
 | `ORIENTATION` | `0x06` | Calculated attitude (Quaternions/Euler angles). |
 | `EVENT` | `0x07` | Major flight events (Liftoff, MECO, Apogee, Deployment). |
+| `ACK` | `0xFD` | Command Acknowledgement (Payload = original `seq_num`). |
 | `ERROR_MSG` | `0xFE` | Faults and system error states. |
 | `CUSTOM` | `0xFF` | Freeform binary payloads. |
 
