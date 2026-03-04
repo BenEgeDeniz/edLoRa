@@ -19,6 +19,7 @@ Defines the structure and intention of the message payload:
 - `MsgType.SYS_STATE` (0x05)
 - `MsgType.ORIENTATION` (0x06)
 - `MsgType.EVENT` (0x07)
+- `MsgType.VELOCITY` (0x08)
 - `MsgType.ACK` (0xFD)
 - `MsgType.ERROR_MSG` (0xFE)
 - `MsgType.CUSTOM` (0xFF)
@@ -118,9 +119,14 @@ if packet.is_targeted_to(0xFF): # Check if message is broadcase or meant for Gro
     
     # Process known types
     if packet.msg_type == MsgType.ALTIMETER:
-        # Example decoding an Altimeter payload (assuming two C-struct float32 values)
-        alt, vel = struct.unpack("<ff", packet.payload)
-        print(f"Altitude: {alt}m, Velocity: {vel}m/s")
+        # Example decoding an Altimeter payload (int32 alt_cm, uint32 pressure_pa)
+        alt_cm, pressure_pa = struct.unpack("<iI", packet.payload)
+        print(f"Altitude: {alt_cm / 100.0}m, Pressure: {pressure_pa}Pa")
+        
+    elif packet.msg_type == MsgType.VELOCITY:
+        # Example decoding a Velocity payload (int16 vz_ms10)
+        vz_ms10, = struct.unpack("<h", packet.payload)
+        print(f"Velocity: {vz_ms10 / 10.0}m/s")
         
     elif packet.msg_type == MsgType.COMMAND:
         command_str = packet.get_payload_string()
