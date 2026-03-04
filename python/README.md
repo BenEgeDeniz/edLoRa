@@ -29,12 +29,13 @@ To allow for structured data, `edLoRa` categorizes packets using the `MsgType` b
 | ---- | --------- | ----------- |
 | `HEARTBEAT` | `0x00` | Simple keep-alive or ping. |
 | `GPS` | `0x01` | Latitude, Longitude, Fix Type, Sat count. |
-| `ALTIMETER` | `0x02` | Altitude and velocity telemetry data. |
+| `ALTIMETER` | `0x02` | Altitude and barometric pressure data. |
 | `IMU` | `0x03` | Raw Accel, Gyro, Mag data. |
 | `COMMAND` | `0x04` | Ground-to-vehicle commands or text logs. |
 | `SYS_STATE` | `0x05` | System battery, temp, and current flight phase. |
 | `ORIENTATION` | `0x06` | Calculated attitude (Quaternions/Euler angles). |
 | `EVENT` | `0x07` | Major flight events (Liftoff, MECO, Apogee, Deployment). |
+| `VELOCITY` | `0x08` | Vertical velocity data. |
 | `ACK` | `0xFD` | Command Acknowledgement (Payload = original `seq_num`). |
 | `ERROR_MSG` | `0xFE` | Faults and system error states. |
 | `CUSTOM` | `0xFF` | Freeform binary payloads. |
@@ -147,8 +148,11 @@ p = Packet.unpack(rx_bytes) # Automatically validates sync byte and CRC16
 is_for_me = p.is_targeted_to(0x01) 
 
 if p.msg_type == MsgType.ALTIMETER:
-    alt, vel = struct.unpack("<ff", p.payload)
-    print(f"Altimeter: {alt}m, {vel}m/s")
+    alt_cm, pressure_pa = struct.unpack("<iI", p.payload)
+    print(f"Altimeter: {alt_cm / 100.0}m, {pressure_pa}Pa")
+elif p.msg_type == MsgType.VELOCITY:
+    vz_ms10, = struct.unpack("<h", p.payload)
+    print(f"Velocity: {vz_ms10 / 10.0}m/s")
 elif p.msg_type == MsgType.ACK:
     print(f"Received ACK for Sequence Number: {p.payload[0]}")
 ```
@@ -161,7 +165,7 @@ You can directly stream incoming data out of a physical LoRa module connected vi
 pip install pyserial
 python3 examples/cli_monitor.py --port /dev/ttyUSB0 --baud 115200
 ```
-*Outputs formatted logs: `[15:30:22.123] [0x10] [ALTIMETER] [BROADCAST] Altitude: 1500.5m, Velocity: 20.3m/s`*
+*Outputs formatted logs: `[15:30:22.123] [0x10] [ALTIMETER] [BROADCAST] Altitude: 1500.5m, Pressure: 101325Pa`*
 
 # Example: Transmitting from Python
 ```python

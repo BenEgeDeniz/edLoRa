@@ -20,6 +20,7 @@ enum class MsgType : uint8_t {
     SYS_STATE = 0x05,   // E.g., Battery level, temperature, flight phase
     ORIENTATION = 0x06, // Quaternions or Euler angles
     EVENT = 0x07,       // Flight events (Launch, Apogee, Deployments)
+    VELOCITY = 0x08,    // Vertical velocity (int16_t, m/s * 10)
     ACK = 0xFD,         // Command Acknowledgement (payload = original seq_num)
     ERROR_MSG = 0xFE,   // Error/Fault conditions
     CUSTOM = 0xFF

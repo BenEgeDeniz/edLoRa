@@ -34,9 +34,22 @@ int main() {
     p2.seq_num = 2;
     p2.timestamp = current_time() + 1000;
     
-    float payload[2] = {1500.5f, -20.0f};
-    memcpy(p2.payload, payload, sizeof(payload));
-    p2.payload_len = sizeof(payload);
+    int32_t alt_cm = 150050; // 1500.5m
+    uint32_t press_pa = 101325;
+    memcpy(p2.payload, &alt_cm, sizeof(int32_t));
+    memcpy(p2.payload + 4, &press_pa, sizeof(uint32_t));
+    p2.payload_len = 8;
+    
+    Packet p3;
+    p3.sender_id = 0xAA;
+    p3.receiver_id = Packet::BROADCAST_ID;
+    p3.msg_type = MsgType::VELOCITY;
+    p3.seq_num = 3;
+    p3.timestamp = current_time() + 1000;
+    
+    int16_t vz = -200; // -20.0 m/s
+    memcpy(p3.payload, &vz, sizeof(int16_t));
+    p3.payload_len = 2;
 
     uint8_t buf[256];
     int len1 = Protocol::pack(p1, buf, sizeof(buf));
@@ -44,6 +57,9 @@ int main() {
     
     int len2 = Protocol::pack(p2, buf, sizeof(buf));
     std::cout.write(reinterpret_cast<char*>(buf), len2);
+    
+    int len3 = Protocol::pack(p3, buf, sizeof(buf));
+    std::cout.write(reinterpret_cast<char*>(buf), len3);
     
     return 0;
 }
@@ -93,9 +109,18 @@ print(f"Successfully decoded {len(packets)} packets in Python.")
 for i, p in enumerate(packets):
     print(f"[{i+1}] Sender: 0x{p.sender_id:02X}, Target: 0x{p.receiver_id:02X}, Seq: {p.seq_num}, Time: {p.timestamp}, Type: {p.msg_type.name}")
 
-assert len(packets) == 2
+assert len(packets) == 3
 assert packets[0].get_payload_string() == "E2E_TEST_1"
 assert packets[0].msg_type == MsgType.COMMAND
+
 assert packets[1].msg_type == MsgType.ALTIMETER
+import struct
+alt_cm, press_pa = struct.unpack("<iI", packets[1].payload)
+assert alt_cm == 150050
+assert press_pa == 101325
+
+assert packets[2].msg_type == MsgType.VELOCITY
+vz_ms10, = struct.unpack("<h", packets[2].payload)
+assert vz_ms10 == -200
 
 print("✅ E2E Python <-> C++ Protocol Packing Validation Complete!")

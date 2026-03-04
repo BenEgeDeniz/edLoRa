@@ -31,18 +31,27 @@ def simulate_flight():
         nonlocal seq
         # Telemetry is broadcasted to ALL listeners
         p = Packet(sender, broadcast_receiver, MsgType.ALTIMETER, seq)
-        # Pack two floats (Altitude, Velocity) into 8 bytes
-        p.payload = struct.pack("<ff", alt, vel)
+        # Pack altitude and pressure into 8 bytes
+        pressure_pa = 101325
+        p.payload = struct.pack("<iI", int(alt * 100), pressure_pa)
         packed = p.pack()
         seq += 1
         
         # Unpack the telemetry for demonstration
         rx_p = Packet.unpack(packed)
-        if not rx_p.is_targeted_to(ground_station):
-            return # Drop packets not meant for us
+        if rx_p.is_targeted_to(ground_station):
+            recovered_alt_cm, recovered_pressure = struct.unpack("<iI", rx_p.payload)
+            print(f"[RX: TELEM  ] Alt: {recovered_alt_cm / 100.0:.1f}m, Press: {recovered_pressure}Pa (Sequence: {rx_p.seq_num})")
 
-        recovered_alt, recovered_vel = struct.unpack("<ff", rx_p.payload)
-        print(f"[RX: TELEM  ] Alt: {recovered_alt:.1f}m, Vel: {recovered_vel:.1f}m/s (Sequence: {rx_p.seq_num})")
+        p_vel = Packet(sender, broadcast_receiver, MsgType.VELOCITY, seq)
+        p_vel.payload = struct.pack("<h", int(vel * 10))
+        packed_vel = p_vel.pack()
+        seq += 1
+
+        rx_p_vel = Packet.unpack(packed_vel)
+        if rx_p_vel.is_targeted_to(ground_station):
+            recovered_vel_ms10, = struct.unpack("<h", rx_p_vel.payload)
+            print(f"[RX: TELEM  ] Vel: {recovered_vel_ms10 / 10.0:.1f}m/s (Sequence: {rx_p_vel.seq_num})")
         time.sleep(0.5)
 
     # 1. Pad / Idle

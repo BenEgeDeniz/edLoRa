@@ -53,25 +53,55 @@ void send_telemetry(float alt, float vel) {
     p.seq_num = seq_num++;
     
     p.payload_len = 8;
-    std::memcpy(&p.payload[0], &alt, sizeof(float));
-    std::memcpy(&p.payload[4], &vel, sizeof(float));
+    int32_t alt_cm = static_cast<int32_t>(alt * 100.0f);
+    uint32_t pressure_pa = 101325; // Dummy baseline pressure
+    std::memcpy(&p.payload[0], &alt_cm, sizeof(int32_t));
+    std::memcpy(&p.payload[4], &pressure_pa, sizeof(uint32_t));
     
     uint8_t buffer[256];
     int size = Protocol::pack(p, buffer, sizeof(buffer));
     
-    // Simulate Reception: Unpack
+    // Simulate Reception: Unpack ALTIMETER
     Packet rx_p;
     if (Protocol::unpack(buffer, size, rx_p) && rx_p.payload_len == 8) {
-        if (!rx_p.is_targeted_to(GROUND_STATION_ID)) return; // Drop
-
-        float rx_alt, rx_vel;
-        std::memcpy(&rx_alt, &rx_p.payload[0], sizeof(float));
-        std::memcpy(&rx_vel, &rx_p.payload[4], sizeof(float));
-        
-        std::cout << "[RX: TELEM  ] Alt: " << std::fixed << std::setprecision(1) << rx_alt 
-                  << "m, Vel: " << rx_vel << "m/s (Sequence: " << (int)rx_p.seq_num << ")" << std::endl;
+        if (rx_p.is_targeted_to(GROUND_STATION_ID)) {
+            int32_t rx_alt_cm;
+            uint32_t rx_pressure_pa;
+            std::memcpy(&rx_alt_cm, &rx_p.payload[0], sizeof(int32_t));
+            std::memcpy(&rx_pressure_pa, &rx_p.payload[4], sizeof(uint32_t));
+            float rx_alt = rx_alt_cm / 100.0f;
+            std::cout << "[RX: TELEM  ] Alt: " << std::fixed << std::setprecision(1) << rx_alt 
+                      << "m, Press: " << rx_pressure_pa << "Pa (Sequence: " << (int)rx_p.seq_num << ")" << std::endl;
+        }
     } else {
-        std::cout << "[RX: TELEM  ] ERROR UNPACKING" << std::endl;
+        std::cout << "[RX: TELEM  ] ERROR UNPACKING ALTIMETER" << std::endl;
+    }
+
+    // Pack VELOCITY Next
+    Packet p_vel;
+    p_vel.sender_id = SENDER_ID;
+    p_vel.receiver_id = BROADCAST_RECEIVER;
+    p_vel.msg_type = MsgType::VELOCITY;
+    p_vel.seq_num = seq_num++;
+
+    p_vel.payload_len = 2;
+    int16_t vz_ms10 = static_cast<int16_t>(vel * 10.0f);
+    std::memcpy(&p_vel.payload[0], &vz_ms10, sizeof(int16_t));
+
+    int size_vel = Protocol::pack(p_vel, buffer, sizeof(buffer));
+
+    // Simulate Reception: Unpack VELOCITY
+    Packet rx_p_vel;
+    if (Protocol::unpack(buffer, size_vel, rx_p_vel) && rx_p_vel.payload_len == 2) {
+        if (rx_p_vel.is_targeted_to(GROUND_STATION_ID)) {
+            int16_t rx_vz_ms10;
+            std::memcpy(&rx_vz_ms10, &rx_p_vel.payload[0], sizeof(int16_t));
+            float rx_vz = rx_vz_ms10 / 10.0f;
+            std::cout << "[RX: TELEM  ] Vel: " << std::fixed << std::setprecision(1) << rx_vz 
+                      << "m/s (Sequence: " << (int)rx_p_vel.seq_num << ")" << std::endl;
+        }
+    } else {
+        std::cout << "[RX: TELEM  ] ERROR UNPACKING VELOCITY" << std::endl;
     }
     
     std::this_thread::sleep_for(std::chrono::milliseconds(500));

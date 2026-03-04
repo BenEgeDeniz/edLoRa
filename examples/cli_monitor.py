@@ -32,8 +32,11 @@ def format_packet(p: Packet) -> str:
     if p.msg_type == MsgType.COMMAND:
         content = f"'{p.get_payload_string()}'"
     elif p.msg_type == MsgType.ALTIMETER and p.payload_len >= 8:
-        alt, vel = struct.unpack("<ff", p.payload[:8])
-        content = f"Altitude: {alt:.2f}m, Velocity: {vel:.2f}m/s"
+        alt_cm, pressure_pa = struct.unpack("<iI", p.payload[:8])
+        content = f"Altitude: {alt_cm / 100.0:.2f}m, Pressure: {pressure_pa}Pa"
+    elif p.msg_type == MsgType.VELOCITY and p.payload_len >= 2:
+        vz_ms10, = struct.unpack("<h", p.payload[:2])
+        content = f"Velocity: {vz_ms10 / 10.0:.2f}m/s"
     elif p.msg_type == MsgType.HEARTBEAT:
         content = "Alive"
     elif p.msg_type == MsgType.ACK and p.payload_len >= 1:
@@ -113,8 +116,13 @@ def main():
                 time.sleep(1.5)
                 # Generate a mock broadcast Altimeter packet
                 p_alt = Packet(sender_id=0x10, receiver_id=Packet.BROADCAST_ID, msg_type=MsgType.ALTIMETER, seq_num=seq, timestamp=int(time.time() * 1000) & 0xFFFFFFFF)
-                p_alt.payload = struct.pack("<ff", 1500.5 + seq, 20.3)
+                p_alt.payload = struct.pack("<iI", int((1500.5 + seq) * 100), 101325)
                 print(format_packet(p_alt))
+                
+                time.sleep(0.1)
+                p_vel = Packet(sender_id=0x10, receiver_id=Packet.BROADCAST_ID, msg_type=MsgType.VELOCITY, seq_num=seq, timestamp=int(time.time() * 1000) & 0xFFFFFFFF)
+                p_vel.payload = struct.pack("<h", int(20.3 * 10))
+                print(format_packet(p_vel))
                 
                 # Alternate with a targeted command
                 if seq % 3 == 0:
