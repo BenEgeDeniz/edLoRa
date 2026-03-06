@@ -18,10 +18,9 @@ class MsgType(IntEnum):
 class PacketFlags(IntEnum):
     NONE = 0x00
     ACK_REQUIRED = 1 << 0
-    IS_ACK = 1 << 1
-    ENCRYPTED = 1 << 2
-    FRAGMENTED = 1 << 3
-    PRIORITY = 1 << 4
+    ENCRYPTED = 1 << 1
+    FRAGMENTED = 1 << 2
+    PRIORITY = 1 << 3
 
 class Packet:
     SYNC_BYTE = 0xED

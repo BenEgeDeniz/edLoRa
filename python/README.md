@@ -19,7 +19,7 @@ When utilizing LoRa at high spread factors (SF10-12) for extreme range operation
 ## 📦 What's New in v2.0?
 The v2.0 upgrade completely rebuilt the protocol header to establish a massive leap in long-term stability and routing potential:
 1. **The `Version` Byte (`0x02`):** Parsers now actively reject packets from mismatched hardware revisions.
-2. **The `Flags` Byte:** Added an 8-bit flag matrix to the header. We can now mark a packet as an `ACK` or `ENCRYPTED` using a single bit, rather than inventing endless unique `MsgType`s for variants of the same telemetry.
+2. **The `Flags` Byte:** Added an 8-bit flag matrix to the header. We can now mark a packet with `ACK_REQUIRED` or `ENCRYPTED` using a single bit, rather than inventing endless unique `MsgType`s for variants of the same telemetry.
 3. **12-byte Super Header:** The new `[Sync | Version | Flags | Sender | Receiver | MsgType | SeqNum | Timestamp | Length]` format uniquely packs 12 bytes of immensely powerful metadata onto the front of every transmission, leaving up to 240 bytes entirely free for your payload structures.
 
 ## Extensive Documentation

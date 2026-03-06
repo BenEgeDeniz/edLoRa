@@ -15,10 +15,9 @@ constexpr size_t FOOTER_SIZE = 2; // CRC16
 enum class PacketFlags : uint8_t {
     NONE = 0x00,
     ACK_REQUIRED = 1 << 0,
-    IS_ACK = 1 << 1,
-    ENCRYPTED = 1 << 2,
-    FRAGMENTED = 1 << 3,
-    PRIORITY = 1 << 4
+    ENCRYPTED = 1 << 1,
+    FRAGMENTED = 1 << 2,
+    PRIORITY = 1 << 3
 };
 
 enum class MsgType : uint8_t {

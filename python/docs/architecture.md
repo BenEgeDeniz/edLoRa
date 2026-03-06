@@ -19,7 +19,7 @@ The `SYNC_BYTE` (`0xED`) acts as a distinct "anchor." The unpacking algorithm si
 
 For long-term reliability and compatibility, the header strictly enforces a `version` byte. This means that if `edLoRa` v3.0 introduces a different byte structure tomorrow, existing v2 parsers won't crash; they will cleanly reject the packet, allowing you to maintain backwards-compatible parser trees.
 
-The `flags` byte provides extreme power without eating bandwidth. Instead of creating redundant `MsgType`s like "ENCRYPTED_TELEMETRY" vs "RAW_TELEMETRY", a single bitmask determines if a packet requires an ACK, is fragmented, or has priority routing.
+The `flags` byte provides extreme power without eating bandwidth. Instead of creating redundant `MsgType`s like "ENCRYPTED_TELEMETRY" vs "RAW_TELEMETRY", a single bitmask determines if a packet has `ACK_REQUIRED`, is fragmented, or has priority routing.
 
 ## Why Enums for `MsgType`?
 
