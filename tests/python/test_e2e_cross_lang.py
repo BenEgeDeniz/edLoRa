@@ -93,7 +93,7 @@ while offset < len(raw_bytes):
         if offset + Packet.HEADER_SIZE > len(raw_bytes):
             break
             
-        payload_len = raw_bytes[offset + 9]
+        payload_len = raw_bytes[offset + 11]
         total_len = Packet.HEADER_SIZE + payload_len + Packet.FOOTER_SIZE
         
         try:

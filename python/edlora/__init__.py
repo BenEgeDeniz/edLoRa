@@ -15,14 +15,25 @@ class MsgType(IntEnum):
     ERROR_MSG = 0xFE   # Error/Fault conditions
     CUSTOM = 0xFF
 
+class PacketFlags(IntEnum):
+    NONE = 0x00
+    ACK_REQUIRED = 1 << 0
+    IS_ACK = 1 << 1
+    ENCRYPTED = 1 << 2
+    FRAGMENTED = 1 << 3
+    PRIORITY = 1 << 4
+
 class Packet:
     SYNC_BYTE = 0xED
+    PROTOCOL_VERSION = 0x02
     BROADCAST_ID = 0xFF
     MAX_PAYLOAD_SIZE = 240
-    HEADER_SIZE = 10  # Sync(1), Sender(1), Recv(1), Type(1), Seq(1), Time(4), Len(1)
+    HEADER_SIZE = 12  # Sync(1), Version(1), Flags(1), Sender(1), Recv(1), Type(1), Seq(1), Time(4), Len(1)
     FOOTER_SIZE = 2 # CRC16
 
-    def __init__(self, sender_id: int = 0, receiver_id: int = 0, msg_type: MsgType = MsgType.CUSTOM, seq_num: int = 0, timestamp: int = 0, payload: bytes = b""):
+    def __init__(self, version: int = 0x02, flags: int = 0, sender_id: int = 0, receiver_id: int = 0, msg_type: MsgType = MsgType.CUSTOM, seq_num: int = 0, timestamp: int = 0, payload: bytes = b""):
+        self.version = version
+        self.flags = flags
         self.sender_id = sender_id
         self.receiver_id = receiver_id
         self.msg_type = msg_type
@@ -72,9 +83,11 @@ class Packet:
 
 
         # Pack header
-        # Format: B(sync), B(sender), B(recv), B(type), B(seq), I(time, 4bytes), B(len)
-        header = struct.pack("<BBBBBIB", 
+        # Format: B(sync), B(version), B(flags), B(sender), B(recv), B(type), B(seq), I(time, 4bytes), B(len)
+        header = struct.pack("<BBBBBBBIB", 
             self.SYNC_BYTE,
+            self.version,
+            self.flags,
             self.sender_id,
             self.receiver_id,
             int(self.msg_type),
@@ -99,10 +112,13 @@ class Packet:
         if len(buffer) < cls.HEADER_SIZE + cls.FOOTER_SIZE:
             raise ValueError("Buffer too short")
 
-        sync, sender, receiver, msg_type_val, seq, timestamp, payload_len = struct.unpack("<BBBBBIB", buffer[:cls.HEADER_SIZE])
+        sync, version, flags, sender, receiver, msg_type_val, seq, timestamp, payload_len = struct.unpack("<BBBBBBBIB", buffer[:cls.HEADER_SIZE])
 
         if sync != cls.SYNC_BYTE:
             raise ValueError(f"Invalid sync byte. Expected {cls.SYNC_BYTE}, got {sync}")
+            
+        if version != cls.PROTOCOL_VERSION:
+            raise ValueError(f"Invalid Protocol Version. Expected {cls.PROTOCOL_VERSION}, got {version}")
 
         if len(buffer) < cls.HEADER_SIZE + payload_len + cls.FOOTER_SIZE:
             raise ValueError("Buffer shorter than payload length specified")
@@ -118,6 +134,8 @@ class Packet:
         payload = buffer[cls.HEADER_SIZE:cls.HEADER_SIZE + payload_len]
 
         return cls(
+            version=version,
+            flags=flags,
             sender_id=sender,
             receiver_id=receiver,
             msg_type=MsgType(msg_type_val),

@@ -3,7 +3,7 @@
 namespace edlora {
 
 Packet::Packet() 
-    : sender_id(0), receiver_id(0), msg_type(MsgType::CUSTOM), seq_num(0), 
+    : version(PROTOCOL_VERSION), flags(0), sender_id(0), receiver_id(0), msg_type(MsgType::CUSTOM), seq_num(0), 
       timestamp(0), payload_len(0) {
     for (size_t i = 0; i < MAX_PAYLOAD_SIZE; ++i) {
         payload[i] = 0;
@@ -74,18 +74,20 @@ int Protocol::pack(const Packet& packet, uint8_t* buffer, size_t buffer_size) {
 
     // Header
     buffer[0] = SYNC_BYTE;
-    buffer[1] = packet.sender_id;
-    buffer[2] = packet.receiver_id;
-    buffer[3] = static_cast<uint8_t>(packet.msg_type);
-    buffer[4] = packet.seq_num;
+    buffer[1] = packet.version;
+    buffer[2] = packet.flags;
+    buffer[3] = packet.sender_id;
+    buffer[4] = packet.receiver_id;
+    buffer[5] = static_cast<uint8_t>(packet.msg_type);
+    buffer[6] = packet.seq_num;
     
     // Timestamp (4 bytes, Little Endian)
-    buffer[5] = static_cast<uint8_t>(packet.timestamp & 0xFF);
-    buffer[6] = static_cast<uint8_t>((packet.timestamp >> 8) & 0xFF);
-    buffer[7] = static_cast<uint8_t>((packet.timestamp >> 16) & 0xFF);
-    buffer[8] = static_cast<uint8_t>((packet.timestamp >> 24) & 0xFF);
+    buffer[7] = static_cast<uint8_t>(packet.timestamp & 0xFF);
+    buffer[8] = static_cast<uint8_t>((packet.timestamp >> 8) & 0xFF);
+    buffer[9] = static_cast<uint8_t>((packet.timestamp >> 16) & 0xFF);
+    buffer[10] = static_cast<uint8_t>((packet.timestamp >> 24) & 0xFF);
     
-    buffer[9] = packet.payload_len;
+    buffer[11] = packet.payload_len;
 
     // Payload
     for (size_t i = 0; i < packet.payload_len; ++i) {
@@ -106,8 +108,11 @@ bool Protocol::unpack(const uint8_t* buffer, size_t length, Packet& packet) {
     if (buffer == nullptr || length < HEADER_SIZE + FOOTER_SIZE) return false;
     
     if (buffer[0] != SYNC_BYTE) return false;
+    
+    // Validate version here
+    if (buffer[1] != PROTOCOL_VERSION) return false;
 
-    uint8_t payload_len = buffer[9];
+    uint8_t payload_len = buffer[11];
     if (length < HEADER_SIZE + payload_len + FOOTER_SIZE) return false;
     if (payload_len > MAX_PAYLOAD_SIZE) return false;
 
@@ -123,17 +128,17 @@ bool Protocol::unpack(const uint8_t* buffer, size_t length, Packet& packet) {
     }
 
     // Populate Packet
-    packet.sender_id = buffer[1];
-    packet.receiver_id = buffer[2];
-    packet.msg_type = static_cast<MsgType>(buffer[3]);
-    packet.seq_num = buffer[4];
+    packet.version = buffer[1];
+    packet.flags = buffer[2];
+    packet.sender_id = buffer[3];
+    packet.receiver_id = buffer[4];
+    packet.msg_type = static_cast<MsgType>(buffer[5]);
+    packet.seq_num = buffer[6];
     
-
-    
-    packet.timestamp = static_cast<uint32_t>(buffer[5]) |
-                       (static_cast<uint32_t>(buffer[6]) << 8) |
-                       (static_cast<uint32_t>(buffer[7]) << 16) |
-                       (static_cast<uint32_t>(buffer[8]) << 24);
+    packet.timestamp = static_cast<uint32_t>(buffer[7]) |
+                       (static_cast<uint32_t>(buffer[8]) << 8) |
+                       (static_cast<uint32_t>(buffer[9]) << 16) |
+                       (static_cast<uint32_t>(buffer[10]) << 24);
                        
     packet.payload_len = payload_len;
 

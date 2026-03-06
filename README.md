@@ -1,15 +1,26 @@
 # edLoRa Protocol
 [![PyPI version](https://img.shields.io/pypi/v/edlora.svg?color=blue)](https://pypi.org/project/edlora/)
 
-A lightweight, cross-language (C++ & Python) binary protocol designed specifically for rocketry telemetry and command data over LoRa modules. Supports both standard Linux and ESP32 platforms in C++, and comes with a Python 3 ground station implementation.
+*edLoRa* is an ultra-lightweight, high-performance binary telemetry protocol engineered specifically for high-power rocketry, high-altitude balloons, and long-range UAVs utilizing LoRa transceivers. 
 
-## Features
-- **Binary Packing:** Completely avoids string processing to keep LoRa bandwidth usage minimal.
-- **Robust Framing:** Dedicated sync bytes, payload length checking, and CCITT CRC-16 checksums ensure data integrity even on noisy RF channels.
-- **Multi-node addressing:** Includes `Sender ID` and `Receiver ID` (with `0xFF` reserved for Broadcast).
-- **Message Types:** Differentiates traffic types (e.g., GPS, IMU, Altimeter, Commands).
-- **Embedded Friendly:** The C++ implementation avoids dynamic memory allocation entirely, protecting against heap fragmentation on ESP32/Arduino.
-- **Optional Crypto:** Includes a lightweight XOR-cipher wrapper inside `edlora_crypto` for obfuscating payload bytes. (Easily swappable with AES if actual cryptographic security is required).
+It completely abandons bandwidth-heavy JSON or text strings in favor of static **struct-packed binary payloads**, ensuring strict data density limits while delivering mathematical packet loss tracking, cross-language interoperability (C++ on the vehicle, Python on the Ground Station), and cryptographic obfuscation.
+
+### 🌟 Why edLoRa over JSON?
+When utilizing LoRa at high spread factors (SF10-12) for extreme range operations, duty-cycle regulations limit your transmission rate to mere bytes-per-second. An 80-byte JSON string like `{"alt": 1500, "vel": 20}` takes massive airtime. In `edLoRa`, this same exact telemetry encapsulates into a heavily-protected mathematical binary struct taking less than a fraction of the time to transmit.
+
+## 🚀 Key Features
+- **Strict Binary Packing:** 100% string-free packing. Minimizes 'Time-on-Air' (ToA) to adhere to strict 1% RF duty cycle limits.
+- **Robust Hardware Framing:** A fixed `0xED` Sync Byte, sequential Payload Length checking, and CCITT CRC-16 checksums mathematically guarantee that your ground station never parses garbage UART data from an overloaded receiver.
+- **Versioned Protocol (v2.0):** Features a fixed `12-byte` routing header encompassing strict `version` validation, meaning future protocol iterations won't crash your ground station parsers.
+- **Dynamic Bitmask Flags:** Built-in protocol-level flags handle properties like `ACK_REQUIRED`, `ENCRYPTED`, or `FRAGMENTED` without wasting precious `MsgType` designations.
+- **Multi-Node Routing:** Integrated `Sender ID` and `Receiver ID` bytes natively support Swarm topologies or Ground-to-Rocket targeting (`0xFF` acts as a Broadcast blanket).
+- **Embedded Zero-Heap C++:** The C++ serializer/deserializer completely avoids dynamic memory allocations, permanently protecting ESP32, STM32, and Arduino microcontrollers against heap fragmentation over multi-hour flight profiles.
+
+## 📦 What's New in v2.0?
+The v2.0 upgrade completely rebuilt the protocol header to establish a massive leap in long-term stability and routing potential:
+1. **The `Version` Byte (`0x02`):** Parsers now actively reject packets from mismatched hardware revisions.
+2. **The `Flags` Byte:** Added an 8-bit flag matrix to the header. We can now mark a packet as an `ACK` or `ENCRYPTED` using a single bit, rather than inventing endless unique `MsgType`s for variants of the same telemetry.
+3. **12-byte Super Header:** The new `[Sync | Version | Flags | Sender | Receiver | MsgType | SeqNum | Timestamp | Length]` format uniquely packs 12 bytes of immensely powerful metadata onto the front of every transmission, leaving up to 240 bytes entirely free for your payload structures.
 
 ## Extensive Documentation
 If you are planning to deploy `edLoRa` for a competition-grade architecture, please review the extensive documentation to fully understand the protocol specification and how to utilize it effectively:
@@ -39,6 +50,19 @@ To allow for structured data, `edLoRa` categorizes packets using the `MsgType` b
 | `ACK` | `0xFD` | Command Acknowledgement (Payload = original `seq_num`). |
 | `ERROR_MSG` | `0xFE` | Faults and system error states. |
 | `CUSTOM` | `0xFF` | Freeform binary payloads. |
+
+### Recommended Payload Schemas
+For standard interoperability between the C++ flight systems and Python ground stations, `edLoRa` expects the following exact byte-packing schemas (Standard **Little-Endian** formatting) for specific `MsgType`s. 
+
+| MsgType | C++ Struct / Variables | Python `struct` format | Total Size | Description |
+| ------- | ---------------------- | ---------------------- | ---------- | ----------- |
+| `ALTIMETER` | `int32_t alt_cm`<br>`uint32_t press_pa` | `<iI` | 8 bytes | Altitude in cm, Barometric pressure in Pa. |
+| `VELOCITY` | `int16_t vz_ms10` | `<h` | 2 bytes | Vertical velocity in m/s multiplied by 10. |
+| `ACK` | `uint8_t seq_num` | `<B` | 1 byte | Contains the `seq_num` of the command being acknowledged. |
+| `COMMAND` | `char str[]` | UTF-8 String | Variable | Plain-text ASCII or UTF-8 string commands (`"DEPLOY"`). |
+| `HEARTBEAT` | *None* | *None* | 0 bytes | Empty payload. Used strictly for ping/keep-alive routing. |
+
+> *Note: Types like `GPS`, `IMU`, `SYS_STATE`, and `EVENT` currently do not strictly enforce a universal struct in the core parser. You can freely `memcpy` your own struct mapping for these.*
 
 ## Device Addressing & Broadcasting
 Every packet encapsulates a `Sender_ID` and a `Receiver_ID` allowing you to strictly route telemetry between multiple rockets and ground stations.
@@ -117,7 +141,7 @@ from edlora import Packet, MsgType
 from edlora_crypto import XorCipher
 
 # Assume `rx_bytes` is the raw byte array received from Ground Station LoRa
-rx_bytes = b'\xed\x10\xff\x01\x01\x04\xde\xad\xbe\xef\x00\xb1'
+rx_bytes = b'\xed\x02\x00\x10\xff\x04\x01\x00\x00\x00\x00\x04\xde\xad\xbe\xef\x00\xb1'
 
 try:
     packet = Packet.unpack(rx_bytes)

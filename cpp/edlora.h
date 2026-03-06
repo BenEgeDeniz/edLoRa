@@ -7,9 +7,19 @@
 namespace edlora {
 
 constexpr uint8_t SYNC_BYTE = 0xED;
+constexpr uint8_t PROTOCOL_VERSION = 0x02;
 constexpr size_t MAX_PAYLOAD_SIZE = 240;
-constexpr size_t HEADER_SIZE = 10; // Sync(1) + Sender(1) + Receiver(1) + Type(1) + Seq(1) + Timestamp(4) + Len(1)
+constexpr size_t HEADER_SIZE = 12; // Sync(1) + Version(1) + Flags(1) + Sender(1) + Receiver(1) + Type(1) + Seq(1) + Timestamp(4) + Len(1)
 constexpr size_t FOOTER_SIZE = 2; // CRC16
+
+enum class PacketFlags : uint8_t {
+    NONE = 0x00,
+    ACK_REQUIRED = 1 << 0,
+    IS_ACK = 1 << 1,
+    ENCRYPTED = 1 << 2,
+    FRAGMENTED = 1 << 3,
+    PRIORITY = 1 << 4
+};
 
 enum class MsgType : uint8_t {
     HEARTBEAT = 0x00,
@@ -27,6 +37,8 @@ enum class MsgType : uint8_t {
 };
 
 struct Packet {
+    uint8_t version;
+    uint8_t flags;
     uint8_t sender_id;
     uint8_t receiver_id;
     MsgType msg_type;

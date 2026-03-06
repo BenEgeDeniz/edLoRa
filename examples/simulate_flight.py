@@ -13,7 +13,7 @@ def simulate_flight():
     def send_log(msg: str):
         nonlocal seq
         # We target this specific ground station directly
-        p = Packet(sender, ground_station, MsgType.COMMAND, seq)
+        p = Packet(sender_id=sender, receiver_id=ground_station, msg_type=MsgType.COMMAND, seq_num=seq)
         p.set_payload_string(msg)
         packed = p.pack()
         seq += 1
@@ -30,7 +30,7 @@ def simulate_flight():
     def send_telemetry(alt: float, vel: float):
         nonlocal seq
         # Telemetry is broadcasted to ALL listeners
-        p = Packet(sender, broadcast_receiver, MsgType.ALTIMETER, seq)
+        p = Packet(sender_id=sender, receiver_id=broadcast_receiver, msg_type=MsgType.ALTIMETER, seq_num=seq)
         # Pack altitude and pressure into 8 bytes
         pressure_pa = 101325
         p.payload = struct.pack("<iI", int(alt * 100), pressure_pa)
@@ -43,7 +43,7 @@ def simulate_flight():
             recovered_alt_cm, recovered_pressure = struct.unpack("<iI", rx_p.payload)
             print(f"[RX: TELEM  ] Alt: {recovered_alt_cm / 100.0:.1f}m, Press: {recovered_pressure}Pa (Sequence: {rx_p.seq_num})")
 
-        p_vel = Packet(sender, broadcast_receiver, MsgType.VELOCITY, seq)
+        p_vel = Packet(sender_id=sender, receiver_id=broadcast_receiver, msg_type=MsgType.VELOCITY, seq_num=seq)
         p_vel.payload = struct.pack("<h", int(vel * 10))
         packed_vel = p_vel.pack()
         seq += 1

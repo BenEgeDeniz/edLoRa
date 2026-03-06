@@ -39,7 +39,7 @@ class TestRobustness(unittest.TestCase):
         
         # Flip a bit in the payload
         fuzzed = bytearray(valid_packet)
-        fuzzed[10] ^= 0xFF
+        fuzzed[12] ^= 0xFF
         
         with self.assertRaises(ValueError):
             Packet.unpack(bytes(fuzzed))

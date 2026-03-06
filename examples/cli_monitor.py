@@ -69,12 +69,12 @@ def stream_from_serial(port: str, baud: int):
                 continue
             
             if byte[0] == Packet.SYNC_BYTE:
-                # Read the rest of the header (9 bytes)
-                header_rest = ser.read(9)
-                if len(header_rest) != 9:
+                # Read the rest of the header (11 bytes)
+                header_rest = ser.read(11)
+                if len(header_rest) != 11:
                     continue
                 
-                payload_len = header_rest[8]
+                payload_len = header_rest[10]
                 
                 # Check bounds to avoid hanging on bad data
                 if payload_len > Packet.MAX_PAYLOAD_SIZE:

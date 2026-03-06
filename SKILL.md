@@ -39,6 +39,8 @@ from edlora import Packet, MsgType
 packet = Packet(
     sender_id=0,               # ID of sender (0-255)
     receiver_id=0,             # Target ID or 0xFF for broadcast (0-255)
+    version=0x02,              # Protocol Version (Fixed per spec)
+    flags=0,                   # Bitwise attributes (e.g. ACK_REQUIRED)
     msg_type=MsgType.CUSTOM,   # The message type (MsgType enum)
     seq_num=0,                 # Packet sequence number (0-255)
     timestamp=0,               # Timestamp in milliseconds (32-bit uint)

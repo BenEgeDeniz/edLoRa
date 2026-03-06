@@ -13,7 +13,13 @@ The most common mistake when building custom telemetry systems over LoRa is atte
 
 If you have a Python ground station reading raw serial bytes from an Arduino receiver over USB, it is incredibly common for the Arduino to reset, drop bytes, or send half a stream. Your Python process will suddenly be looking at a random byte like `0x4F` when it expected the start of a packet.
 
-The `SYNC_BYTE` (`0xED`) acts as a distinct "anchor." The unpacking algorithm simply skips and ignores all incoming bytes until it spots `0xED`. Once found, it assumes the next 9 bytes are the header, extracts the payload length, and jumps directly to the CRC. If it was a false `0xED`, the CRC will fail, the packet is safely discarded, and the scanner resumes hunting for the next `0xED`.
+The `SYNC_BYTE` (`0xED`) acts as a distinct "anchor." The unpacking algorithm simply skips and ignores all incoming bytes until it spots `0xED`. Once found, it validates the structure, extracts the payload length from the 12-byte header, and jumps directly to the CRC. If it was a false `0xED`, the CRC will fail, the packet is safely discarded, and the scanner resumes hunting for the next `0xED`.
+
+## Why Version and Flags? (Protocol v2.0)
+
+For long-term reliability and compatibility, the header strictly enforces a `version` byte. This means that if `edLoRa` v3.0 introduces a different byte structure tomorrow, existing v2 parsers won't crash; they will cleanly reject the packet, allowing you to maintain backwards-compatible parser trees.
+
+The `flags` byte provides extreme power without eating bandwidth. Instead of creating redundant `MsgType`s like "ENCRYPTED_TELEMETRY" vs "RAW_TELEMETRY", a single bitmask determines if a packet requires an ACK, is fragmented, or has priority routing.
 
 ## Why Enums for `MsgType`?
 
@@ -39,7 +45,7 @@ By having the Rocket natively inject its internal `millis()` clock into every he
 ## Why CRC-16?
 
 RF noise causes bit-flips. A `0` becomes a `1` while flying through the air.
-A Cyclic Redundancy Check (CRC-16 CCITT) mathematically hashes the entire Header + Payload. When the packet arrives, the receiver re-calculates the hash. If even a single bit in the 252-byte stream was flipped by cosmic noise or interference, the hash completely changes and `unpack()` correctly rejects the corrupted data.
+A Cyclic Redundancy Check (CRC-16 CCITT) mathematically hashes the entire Header + Payload. When the packet arrives, the receiver re-calculates the hash. If even a single bit in the 254-byte stream was flipped by cosmic noise or interference, the hash completely changes and `unpack()` correctly rejects the corrupted data.
 Using 16 bits provides significantly better guarantees than an 8-bit checksum for payloads reaching 240 bytes.
 
 ## The Acknowledgement (ACK) System
